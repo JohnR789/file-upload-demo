@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
-// For animation: useState/useEffect only; no deps needed!
 const BACKEND = 'https://file-upload-demo-8ti2.onrender.com';
 
-// Simple animated loader component
 function Loader() {
   return (
     <div style={{
@@ -29,6 +27,7 @@ function App() {
   const [authMode, setAuthMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [authStatus, setAuthStatus] = useState('');
 
@@ -37,11 +36,9 @@ function App() {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState('');
-  const [statusAnim, setStatusAnim] = useState(''); // animation class
+  const [statusAnim, setStatusAnim] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [showCard, setShowCard] = useState(false); // for fade-in
-
-  // For animating file list items
+  const [showCard, setShowCard] = useState(false);
   const [listAnim, setListAnim] = useState(false);
 
   // Get user email from token
@@ -304,26 +301,57 @@ function App() {
                   transition: 'box-shadow 0.15s'
                 }}
               />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '15px 16px',
-                  marginBottom: 22,
-                  borderRadius: 18,
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: 16,
-                  background: '#f3f4f6',
-                  color: '#312e81',
-                  boxShadow: '0 0.5px 2px 0 #e0e7ff,0 1.5px 8px 0 #e0e7ff',
-                  transition: 'box-shadow 0.15s'
-                }}
-              />
+              <div style={{ position: 'relative', marginBottom: 22 }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '15px 45px 15px 16px',
+                    borderRadius: 18,
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: 16,
+                    background: '#f3f4f6',
+                    color: '#312e81',
+                    boxShadow: '0 0.5px 2px 0 #e0e7ff,0 1.5px 8px 0 #e0e7ff',
+                    transition: 'box-shadow 0.15s'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  tabIndex={-1}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 19,
+                    color: '#6366f1',
+                    opacity: 0.78,
+                    padding: 0
+                  }}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword
+                    ? (
+                        // Eye-off icon (SVG)
+                        <svg width="23" height="23" fill="none" viewBox="0 0 24 24"><path d="M3 3l18 18m-9-2c-5.333 0-8-5.25-8-5.25s1.39-2.5 4.07-4.35m5.88-.7A3 3 0 0012 9c-1.657 0-3 1.343-3 3 0 .524.135 1.018.37 1.44m2.03 2.06A3 3 0 0015 12m3.53-2.44C20.61 10.75 22 13 22 13s-2.667 5.25-8 5.25c-1.137 0-2.158-.2-3.065-.53" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      )
+                    : (
+                        // Eye icon (SVG)
+                        <svg width="23" height="23" fill="none" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      )
+                  }
+                </button>
+              </div>
               <button
                 type="submit"
                 style={{
@@ -646,6 +674,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
