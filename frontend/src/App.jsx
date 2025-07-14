@@ -1,23 +1,83 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
+// For animation: useState/useEffect only; no deps needed!
 const BACKEND = 'https://file-upload-demo-8ti2.onrender.com';
 
+// Simple animated loader component
+function Loader() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', height: 40
+    }}>
+      <div style={{
+        width: 32, height: 32, border: '4px solid #a5b4fc', borderTop: '4px solid #6366f1',
+        borderRadius: '50%', animation: 'spin 1s linear infinite'
+      }} />
+      <style>
+        {`@keyframes spin { to { transform: rotate(360deg); } }`}
+      </style>
+    </div>
+  );
+}
+
 function App() {
+  // Animated background gradient state
+  const [gradientPos, setGradientPos] = useState(0);
+
+  // Auth state
   const [authMode, setAuthMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [authStatus, setAuthStatus] = useState('');
 
+  // File state
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState('');
+  const [statusAnim, setStatusAnim] = useState(''); // animation class
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [showCard, setShowCard] = useState(false); // for fade-in
+
+  // For animating file list items
+  const [listAnim, setListAnim] = useState(false);
 
   // Get user email from token
   const userEmail = token ? jwtDecode(token).email : '';
+
+  // Animate background gradient
+  useEffect(() => {
+    const animate = () => {
+      setGradientPos(pos => (pos + 0.08) % 100);
+      requestAnimationFrame(animate);
+    };
+    animate();
+    return () => {};
+  }, []);
+
+  // Card fade-in
+  useEffect(() => {
+    setTimeout(() => setShowCard(true), 80);
+  }, [token]);
+
+  // Animate file list on update
+  useEffect(() => {
+    setListAnim(false);
+    setTimeout(() => setListAnim(true), 140);
+  }, [uploadedFiles]);
+
+  // Animate status message
+  useEffect(() => {
+    if (!status) return;
+    setStatusAnim('fadeIn');
+    if (status.startsWith('Error') || status.startsWith('Upload') || status.startsWith('Delete failed')) {
+      setTimeout(() => setStatusAnim('shake'), 400);
+    }
+    const timeout = setTimeout(() => setStatusAnim(''), 1600);
+    return () => clearTimeout(timeout);
+  }, [status]);
 
   async function handleAuthSubmit(e) {
     e.preventDefault();
@@ -65,12 +125,10 @@ function App() {
     e.preventDefault();
     setDragActive(true);
   }
-
   function handleDragLeave(e) {
     e.preventDefault();
     setDragActive(false);
   }
-
   function handleDrop(e) {
     e.preventDefault();
     setDragActive(false);
@@ -87,7 +145,7 @@ function App() {
       return;
     }
     setUploading(true);
-    setStatus('Uploading...');
+    setStatus('');
     const formData = new FormData();
     formData.append('file', file);
 
@@ -173,23 +231,25 @@ function App() {
     }
   }, [token, fetchFiles]);
 
-  // ---- FULLSCREEN UI starts here ----
+  const animatedBg = {
+    minHeight: '100vh',
+    minWidth: '100vw',
+    width: '100vw',
+    height: '100vh',
+    fontFamily: 'Inter, sans-serif',
+    background: `linear-gradient(120deg, 
+      hsl(${200 + Math.sin(gradientPos/8)*40}, 93%, 91%) 0%, 
+      hsl(${280 + Math.cos(gradientPos/6)*40}, 95%, 90%) 55%, 
+      hsl(${305 + Math.sin(gradientPos/5)*25}, 90%, 88%) 100%)`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'background 1s linear'
+  };
 
   if (!token) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          minWidth: '100vw',
-          width: '100vw',
-          height: '100vh',
-          background: 'linear-gradient(135deg, #dbeafe 0%, #c7d2fe 50%, #f0abfc 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: 'Inter, sans-serif',
-        }}
-      >
+      <div style={animatedBg}>
         <div
           style={{
             width: '100vw',
@@ -207,20 +267,20 @@ function App() {
               padding: '3.2rem 2.2rem 2.7rem 2.2rem',
               background: 'rgba(255,255,255,0.85) linear-gradient(135deg,#f1f5f9 10%,#dbeafe 80%)',
               borderRadius: 36,
-              boxShadow: '0 12px 44px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.04)',
+              boxShadow: `0 12px 44px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.04)`,
               border: '1.5px solid #e0e7ff',
-              transition: 'box-shadow 0.2s'
+              opacity: showCard ? 1 : 0,
+              transform: showCard ? 'scale(1)' : 'scale(0.97)',
+              transition: 'all 0.65s cubic-bezier(.4,.6,0,1)'
             }}
           >
-            <h2
-              style={{
-                color: '#312e81',
-                marginBottom: 22,
-                letterSpacing: 0.5,
-                fontWeight: 800,
-                fontSize: 26
-              }}
-            >
+            <h2 style={{
+              color: '#312e81',
+              marginBottom: 22,
+              letterSpacing: 0.5,
+              fontWeight: 800,
+              fontSize: 26
+            }}>
               {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
             <form onSubmit={handleAuthSubmit} autoComplete="off">
@@ -279,58 +339,49 @@ function App() {
                   boxShadow: '0 2px 8px 0 #a5b4fc36',
                   marginBottom: 12,
                   letterSpacing: 0.1,
-                  transition: 'background 0.18s'
+                  transition: 'background 0.18s, transform 0.18s',
+                  transform: 'scale(1)',
                 }}
+                onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
               >
                 {authMode === 'login' ? 'Sign In' : 'Sign Up'}
               </button>
             </form>
-            <div
-              style={{
-                color: authStatus.startsWith('Logged')
-                  ? '#22c55e'
-                  : authStatus.startsWith('Registration')
-                  ? '#0ea5e9'
-                  : '#dc2626',
-                minHeight: 26,
-                marginBottom: 14,
-                fontSize: 15
-              }}
-            >
+            <div style={{
+              color: authStatus.startsWith('Logged')
+                ? '#22c55e'
+                : authStatus.startsWith('Registration')
+                ? '#0ea5e9'
+                : '#dc2626',
+              minHeight: 26,
+              marginBottom: 14,
+              fontSize: 15,
+              opacity: authStatus ? 1 : 0,
+              transform: authStatus ? 'translateY(0)' : 'translateY(-10px)',
+              transition: 'all 0.33s'
+            }}>
               {authStatus}
             </div>
             <div style={{ fontSize: 15 }}>
               {authMode === 'login' ? (
                 <>
                   <span style={{ color: '#6d28d9' }}>New here?</span>{' '}
-                  <span
-                    style={{
-                      color: '#2563eb',
-                      cursor: 'pointer',
-                      fontWeight: 600
-                    }}
-                    onClick={() => {
-                      setAuthMode('register');
-                      setAuthStatus('');
-                    }}
-                  >
+                  <span style={{
+                    color: '#2563eb', cursor: 'pointer', fontWeight: 600
+                  }}
+                    onClick={() => { setAuthMode('register'); setAuthStatus(''); }}>
                     Create account
                   </span>
                 </>
               ) : (
                 <>
                   <span style={{ color: '#475569' }}>Already have an account?</span>{' '}
-                  <span
-                    style={{
-                      color: '#2563eb',
-                      cursor: 'pointer',
-                      fontWeight: 600
-                    }}
-                    onClick={() => {
-                      setAuthMode('login');
-                      setAuthStatus('');
-                    }}
-                  >
+                  <span style={{
+                    color: '#2563eb', cursor: 'pointer', fontWeight: 600
+                  }}
+                    onClick={() => { setAuthMode('login'); setAuthStatus(''); }}>
                     Sign in
                   </span>
                 </>
@@ -341,22 +392,8 @@ function App() {
       </div>
     );
   }
-
-  // -------- Main Authenticated UI ---------
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        minWidth: '100vw',
-        width: '100vw',
-        height: '100vh',
-        background: 'linear-gradient(135deg, #dbeafe 0%, #c7d2fe 50%, #f0abfc 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'Inter, sans-serif'
-      }}
-    >
+    <div style={animatedBg}>
       <div
         style={{
           width: '100vw',
@@ -372,43 +409,25 @@ function App() {
             maxWidth: 500,
             margin: '0 auto',
             padding: '3rem 2rem 2.5rem 2rem',
-            background: 'rgba(255,255,255,0.88) linear-gradient(135deg,#e0e7ff 0%,#f5d0fe 100%)',
+            background: 'rgba(255,255,255,0.90) linear-gradient(135deg,#e0e7ff 0%,#f5d0fe 100%)',
             borderRadius: 36,
             boxShadow: '0 12px 48px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.05)',
             border: '1.5px solid #e0e7ff',
-            transition: 'box-shadow 0.2s'
+            opacity: showCard ? 1 : 0,
+            transform: showCard ? 'scale(1)' : 'scale(0.97)',
+            transition: 'all 0.7s cubic-bezier(.5,.6,0,1)'
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 18
-            }}
-          >
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18
+          }}>
             <div>
-              <h2
-                style={{
-                  color: '#312e81',
-                  margin: 0,
-                  letterSpacing: 0.5,
-                  fontWeight: 800,
-                  fontSize: 26
-                }}
-              >
-                File Upload Demo
-              </h2>
-              <div
-                style={{
-                  fontSize: 15.5,
-                  color: '#52525b',
-                  marginTop: 2,
-                  fontWeight: 500
-                }}
-              >
-                {userEmail}
-              </div>
+              <h2 style={{
+                color: '#312e81', margin: 0, letterSpacing: 0.5, fontWeight: 800, fontSize: 26
+              }}>File Upload Demo</h2>
+              <div style={{
+                fontSize: 15.5, color: '#52525b', marginTop: 2, fontWeight: 500
+              }}>{userEmail}</div>
             </div>
             <button
               onClick={handleLogout}
@@ -421,11 +440,13 @@ function App() {
                 cursor: 'pointer',
                 fontSize: 14,
                 fontWeight: 600,
-                transition: 'background 0.18s'
+                transition: 'background 0.18s, transform 0.13s',
+                transform: 'scale(1)'
               }}
-            >
-              Logout
-            </button>
+              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
+              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >Logout</button>
           </div>
           <form
             onSubmit={handleFileUpload}
@@ -433,35 +454,33 @@ function App() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             style={{
-              border: dragActive
-                ? '2.5px dashed #6366f1'
-                : '1.5px solid #e5e7eb',
+              border: dragActive ? '2.5px dashed #6366f1' : '1.5px solid #e5e7eb',
               background: dragActive
-                ? 'rgba(196,181,253,0.08)'
+                ? 'rgba(196,181,253,0.13)'
                 : '#f9fafb',
               borderRadius: 24,
               padding: 22,
               marginBottom: 16,
               boxShadow: dragActive
-                ? '0 0 0 4px #a5b4fc33'
-                : '0 0.5px 8px 0 #f3e8ff10'
+                ? '0 0 0 7px #a5b4fc33'
+                : '0 0.5px 8px 0 #f3e8ff10',
+              transition: 'box-shadow 0.3s, border 0.22s, background 0.24s'
             }}
           >
             <label
               htmlFor="file-upload"
               style={{
                 display: 'inline-block',
-                background: '#f3f4f6',
-                color: '#6366f1',
+                background: dragActive ? '#e0e7ff' : '#f3f4f6',
+                color: dragActive ? '#6366f1' : '#6366f1',
                 fontWeight: 600,
                 padding: '13px 28px',
                 borderRadius: 18,
                 cursor: 'pointer',
                 marginBottom: 14,
-                border: '1.5px solid #a5b4fc',
-                boxShadow: '0 0.5px 2px 0 #e0e7ff',
-                fontSize: 15.5,
-                transition: 'background 0.16s, color 0.16s'
+                border: dragActive ? '2px solid #6366f1' : '1.5px solid #a5b4fc',
+                fontSize: 16,
+                boxShadow: dragActive ? '0 0 0 3px #a5b4fc66' : ''
               }}
             >
               Choose File
@@ -472,22 +491,10 @@ function App() {
                 onChange={handleFileChange}
               />
             </label>
-            <div
-              style={{
-                marginBottom: 18,
-                fontSize: 14.5,
-                color: dragActive ? '#312e81' : '#6d28d9',
-                minHeight: 24,
-                fontWeight: 500,
-                letterSpacing: 0.01,
-                transition: 'color 0.12s'
-              }}
-            >
-              {file
-                ? file.name
-                : dragActive
-                ? 'Drop file here to upload'
-                : 'or drag & drop here'}
+            <div style={{
+              marginBottom: 19, fontSize: 15, color: '#3730a3', minHeight: 20, fontWeight: 500
+            }}>
+              {file ? file.name : (dragActive ? "Drop file here..." : "or drag & drop here")}
             </div>
             <button
               type="submit"
@@ -495,82 +502,82 @@ function App() {
               style={{
                 width: '100%',
                 background: uploading
-                  ? 'linear-gradient(90deg, #d1fae5 10%, #a7f3d0 100%)'
-                  : 'linear-gradient(90deg, #a5b4fc 10%, #6366f1 100%)',
-                color: uploading ? '#52525b' : '#fff',
-                padding: '15px 0',
+                  ? 'linear-gradient(90deg,#c7d2fe 30%,#818cf8 100%)'
+                  : 'linear-gradient(90deg, #6366f1 10%, #818cf8 100%)',
+                color: '#fff',
+                padding: '14px 0',
                 border: 'none',
                 borderRadius: 24,
-                fontWeight: 800,
-                fontSize: 17.2,
+                fontWeight: 700,
+                fontSize: 17,
                 cursor: uploading ? 'not-allowed' : 'pointer',
-                boxShadow: uploading
-                  ? '0 1px 2px #d1fae5'
-                  : '0 2px 8px 0 #a5b4fc33',
-                letterSpacing: 0.1,
-                marginBottom: 5,
-                transition: 'background 0.18s'
+                boxShadow: uploading ? 'none' : '0 2px 8px 0 #a5b4fc38',
+                transition: 'background 0.18s, transform 0.13s'
               }}
+              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             >
-              {uploading ? 'Uploading...' : 'Upload'}
+              {uploading ? <Loader /> : 'Upload'}
             </button>
           </form>
           <div
+            className={statusAnim}
             style={{
-              margin: '17px 0',
-              minHeight: 28,
-              color: status.startsWith('File uploaded')
+              margin: '18px 0 4px 0',
+              minHeight: 30,
+              color: status.startsWith('File uploaded successfully.')
                 ? '#22c55e'
-                : status.startsWith('Error') || status.startsWith('Upload')
+                : status.startsWith('Error') || status.startsWith('Upload') || status.startsWith('Delete failed')
                 ? '#dc2626'
                 : '#444',
               fontWeight: 600,
-              fontSize: 16
+              fontSize: 15.5,
+              letterSpacing: 0.03,
+              opacity: status ? 1 : 0,
+              transform: status
+                ? statusAnim === 'shake'
+                  ? 'translateX(-4px)'
+                  : 'translateY(0)'
+                : 'translateY(-14px)',
+              transition: 'all 0.3s'
             }}
           >
             {status}
           </div>
-          <hr style={{ margin: '2.2rem 0 1.2rem', borderColor: '#e0e7ff' }} />
-          <h3
-            style={{
-              color: '#312e81',
-              fontSize: 19,
-              fontWeight: 800,
-              marginBottom: 12,
-              letterSpacing: 0.2
-            }}
-          >
-            Your Files
-          </h3>
-          {uploadedFiles.length === 0 && (
-            <div
-              style={{
-                color: '#bbb',
-                fontWeight: 500,
-                fontSize: 15,
-                marginBottom: 10
-              }}
-            >
-              No files yet.
-            </div>
-          )}
-          <ul
-            style={{
-              listStyle: 'none',
-              padding: 0,
-              maxHeight: 140,
-              overflowY: 'auto',
-              marginBottom: 8
-            }}
-          >
-            {uploadedFiles.map(name => (
+          <hr style={{
+            margin: '2rem 0 1.3rem 0',
+            border: 'none',
+            borderTop: '1.6px solid #c7d2fe',
+            opacity: 0.58
+          }} />
+          <h3 style={{
+            color: '#312e81',
+            fontSize: 18.5,
+            fontWeight: 800,
+            marginBottom: 13,
+            marginTop: 0,
+            letterSpacing: 0.03
+          }}>Your Files</h3>
+          {uploadedFiles.length === 0 && <div style={{ color: '#b6b7bb', fontSize: 15, marginBottom: 7 }}>No files yet.</div>}
+          <ul style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            maxHeight: 155,
+            overflowY: 'auto'
+          }}>
+            {uploadedFiles.map((name, idx) => (
               <li
                 key={name}
                 style={{
                   margin: '11px 0',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  opacity: listAnim ? 1 : 0,
+                  transform: listAnim ? 'translateY(0)' : 'translateY(25px)',
+                  transition: `all 0.45s cubic-bezier(.44,1.26,.52,1.01) ${0.11*idx}s`
                 }}
               >
                 <span
@@ -610,11 +617,36 @@ function App() {
           </ul>
         </div>
       </div>
+      {/* Tiny inlined animation CSS */}
+      <style>
+        {`
+          .fadeIn {
+            animation: fadeIn 0.5s cubic-bezier(.36,1.2,.42,1.01);
+          }
+          .shake {
+            animation: shake 0.38s cubic-bezier(.58,.01,.96,.7) 1;
+          }
+          @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(18px);}
+            80% { opacity: 1; transform: translateY(-4px);}
+            100% { opacity: 1; transform: translateY(0);}
+          }
+          @keyframes shake {
+            0%,100% { transform: translateX(0);}
+            16% { transform: translateX(-7px);}
+            34% { transform: translateX(5px);}
+            52% { transform: translateX(-5px);}
+            70% { transform: translateX(4px);}
+            88% { transform: translateX(-2px);}
+          }
+        `}
+      </style>
     </div>
   );
 }
 
 export default App;
+
 
 
 
