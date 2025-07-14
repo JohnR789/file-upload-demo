@@ -28,7 +28,7 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:5000/upload', {
+      const response = await fetch('https://file-upload-demo-8ti2.onrender.com/upload', {
         method: 'POST',
         body: formData,
       });
@@ -51,7 +51,7 @@ function App() {
   // Get the current list of uploaded files
   async function fetchFiles() {
     try {
-      const res = await fetch('http://localhost:5000/files');
+      const res = await fetch('https://file-upload-demo-8ti2.onrender.com/files');
       const data = await res.json();
       setUploadedFiles(data.files || []);
     } catch (error) {
@@ -98,7 +98,7 @@ function App() {
         {uploadedFiles.map(name => (
           <li key={name} style={{ margin: '8px 0' }}>
             <a
-              href={`http://localhost:5000/files/${encodeURIComponent(name)}`}
+              href={`https://file-upload-demo-8ti2.onrender.com/files/${encodeURIComponent(name)}`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -112,5 +112,6 @@ function App() {
 }
 
 export default App;
+
 
 
