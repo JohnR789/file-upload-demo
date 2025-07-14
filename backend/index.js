@@ -1,63 +1,140 @@
 // Import required modules
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const fsPromises = require('fs').promises;
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-// Create an instance of Express
+
+
+// Initialize Express app
 const app = express();
-
-// Enable CORS 
 app.use(cors());
+app.use(express.json()); 
 
-// Make sure uploaded files go into a folder called "uploads"
-const UPLOADS_FOLDER = path.join(__dirname, 'uploads');
+// JWT Secret 
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// If uploads folder doesn't exist, create it
-if (!fs.existsSync(UPLOADS_FOLDER)) {
-  fs.mkdirSync(UPLOADS_FOLDER);
+// Storage path for user uploads
+const USERS_FILE = path.join(__dirname, 'users.json');
+async function loadUsers() {
+  try {
+    const data = await fsPromises.readFile(USERS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+async function saveUsers(users) {
+  await fsPromises.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
-// Set up multer for handling file uploads
+// Middleware to check JWT and get user
+function authMiddleware(req, res, next) {
+  const header = req.headers['authorization'];
+  if (!header) return res.status(401).json({ success: false, message: 'No token' });
+  const token = header.split(' ')[1];
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+}
+
+// Registration route
+app.post('/register', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ success: false, message: 'Email and password required.' });
+
+  const users = await loadUsers();
+  if (users.find(u => u.email === email))
+    return res.status(409).json({ success: false, message: 'Email already registered.' });
+
+  const hashed = await bcrypt.hash(password, 10);
+  const newUser = { id: Date.now().toString(), email, password: hashed };
+  users.push(newUser);
+  await saveUsers(users);
+
+  // Create user uploads folder
+  const userUploadDir = path.join(__dirname, 'uploads', newUser.id);
+  if (!fs.existsSync(userUploadDir)) {
+    fs.mkdirSync(userUploadDir, { recursive: true });
+  }
+
+  res.json({ success: true, message: 'Registration successful.' });
+});
+
+// Login route
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ success: false, message: 'Email and password required.' });
+
+  const users = await loadUsers();
+  const user = users.find(u => u.email === email);
+  if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+
+  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '2h' });
+  res.json({ success: true, token });
+});
+
+// --- Per-user uploads setup ---
+
+// Multer storage: uploads/<userId>/
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, UPLOADS_FOLDER); // Save files here
+    const userId = req.user.id;
+    const userUploadDir = path.join(__dirname, 'uploads', userId);
+    if (!fs.existsSync(userUploadDir)) {
+      fs.mkdirSync(userUploadDir, { recursive: true });
+    }
+    cb(null, userUploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, file.originalname);
   }
 });
-
 const upload = multer({ storage: storage });
 
+// Simple home route
 app.get('/', (req, res) => {
   res.send('Backend is running.');
 });
 
-// POST /upload will handle single file uploads from the frontend
-app.post('/upload', upload.single('file'), (req, res) => {
-  // If no file is attached, send an error
+// Upload endpoint (auth required)
+app.post('/upload', authMiddleware, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded!' });
   }
-  // File saved!
   res.json({ success: true, filename: req.file.originalname, message: 'File uploaded successfully.' });
 });
 
-// List uploaded files 
-app.get('/files', (req, res) => {
-  fs.readdir(UPLOADS_FOLDER, (err, files) => {
+// List files (auth required)
+app.get('/files', authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  const userUploadDir = path.join(__dirname, 'uploads', userId);
+  fs.readdir(userUploadDir, (err, files) => {
     if (err) {
-      return res.status(500).json({ success: false, message: 'Unable to list files.' });
+      return res.json({ files: [] }); 
     }
     res.json({ files });
   });
 });
 
-// download a file by filename
-app.get('/files/:name', (req, res) => {
-  const filePath = path.join(UPLOADS_FOLDER, req.params.name);
+// Download file (auth required)
+app.get('/files/:name', authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  const filePath = path.join(__dirname, 'uploads', userId, req.params.name);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ success: false, message: 'File not found.' });
   }
@@ -69,3 +146,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
