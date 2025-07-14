@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import jwt_decode from 'jwt-decode';
 
 const BACKEND = 'https://file-upload-demo-8ti2.onrender.com';
 
@@ -10,9 +11,13 @@ function App() {
   const [authStatus, setAuthStatus] = useState('');
 
   const [file, setFile] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
+
+  // Get user email from token
+  const userEmail = token ? jwt_decode(token).email : '';
 
   async function handleAuthSubmit(e) {
     e.preventDefault();
@@ -55,6 +60,26 @@ function App() {
     setStatus('');
   }
 
+  // Drag and drop logic
+  function handleDragOver(e) {
+    e.preventDefault();
+    setDragActive(true);
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setDragActive(false);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
+      setStatus('');
+    }
+  }
+
   async function handleFileUpload(e) {
     e.preventDefault();
     if (!file) {
@@ -87,7 +112,27 @@ function App() {
     }
   }
 
-  // Use useCallback to silence the React warning about fetchFiles as a dependency
+  // Delete file
+  async function handleDelete(name) {
+    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatus('File deleted.');
+        fetchFiles();
+      } else {
+        setStatus(data.message || 'Delete failed.');
+      }
+    } catch {
+      setStatus('Error deleting file.');
+    }
+  }
+
+  // Fetch file list
   const fetchFiles = useCallback(async () => {
     try {
       const res = await fetch(`${BACKEND}/files`, {
@@ -203,11 +248,16 @@ function App() {
         borderRadius: 16,
         padding: '2.5rem 2.5rem 2rem 2.5rem',
         boxShadow: '0 6px 36px rgba(44,62,80,0.12)',
-        width: 350,
+        width: 370,
         maxWidth: '90vw'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ color: '#223555', marginBottom: 20, letterSpacing: 0.5 }}>File Upload Demo</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div>
+            <h2 style={{ color: '#223555', margin: 0, letterSpacing: 0.5 }}>File Upload Demo</h2>
+            <div style={{ fontSize: 14, color: '#555', marginTop: 2 }}>
+              {userEmail}
+            </div>
+          </div>
           <button onClick={handleLogout} style={{
             background: '#e5e7eb',
             color: '#223555',
@@ -216,11 +266,22 @@ function App() {
             padding: '6px 16px',
             cursor: 'pointer',
             fontSize: 13,
-            fontWeight: 500,
-            marginBottom: 16
+            fontWeight: 500
           }}>Logout</button>
         </div>
-        <form onSubmit={handleFileUpload}>
+        <form
+          onSubmit={handleFileUpload}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          style={{
+            border: dragActive ? '2px dashed #2563eb' : '2px solid #e5e7eb',
+            background: dragActive ? '#eaf6ff' : '',
+            borderRadius: 8,
+            padding: 18,
+            marginBottom: 12
+          }}
+        >
           <label htmlFor="file-upload" style={{
             display: 'inline-block',
             background: '#eaf6ff',
@@ -241,7 +302,7 @@ function App() {
             />
           </label>
           <div style={{ marginBottom: 16, fontSize: 13, color: '#444', minHeight: 20 }}>
-            {file && file.name}
+            {file ? file.name : (dragActive ? "Drop file here..." : "or drag & drop here")}
           </div>
           <button
             type="submit"
@@ -268,7 +329,7 @@ function App() {
         {uploadedFiles.length === 0 && <div style={{ color: '#bbb' }}>No files yet.</div>}
         <ul style={{ listStyle: 'none', padding: 0, maxHeight: 130, overflowY: 'auto' }}>
           {uploadedFiles.map(name => (
-            <li key={name} style={{ margin: '7px 0' }}>
+            <li key={name} style={{ margin: '7px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <a
                 href={`${BACKEND}/files/${encodeURIComponent(name)}`}
                 target="_blank"
@@ -281,6 +342,21 @@ function App() {
               >
                 {name}
               </a>
+              <button
+                onClick={() => handleDelete(name)}
+                style={{
+                  marginLeft: 12,
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  fontSize: 13,
+                  cursor: 'pointer'
+                }}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>
@@ -290,6 +366,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
