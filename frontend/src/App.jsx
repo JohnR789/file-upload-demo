@@ -173,6 +173,8 @@ function App() {
     }
   }, [token, fetchFiles]);
 
+  // ---- Modern UI/UX begins here ----
+
   if (!token) {
     return (
       <div
@@ -342,13 +344,16 @@ function App() {
     >
       <div
         style={{
+          flex: '0 1 440px',
+          width: '100%',
+          maxWidth: 500,
+          minWidth: 300,
+          margin: '0 auto',
           backdropFilter: 'blur(16px)',
           background: 'rgba(255,255,255,0.88) linear-gradient(135deg,#e0e7ff 0%,#f5d0fe 100%)',
           borderRadius: 32,
           boxShadow: '0 12px 48px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.05)',
           padding: '2.8rem 2.5rem 2.5rem 2.5rem',
-          width: 410,
-          maxWidth: '98vw',
           border: '1.5px solid #e0e7ff',
           transition: 'box-shadow 0.2s'
         }}
@@ -558,7 +563,6 @@ function App() {
                   textDecoration: 'underline',
                   cursor: 'pointer',
                   fontSize: 15.3,
-                  letterSpacing: 0.01,
                   transition: 'color 0.13s'
                 }}
                 onClick={() => handleDownload(name)}
@@ -592,6 +596,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
