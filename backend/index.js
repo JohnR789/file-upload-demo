@@ -9,17 +9,14 @@ const fsPromises = require('fs').promises;
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-
-
-// Initialize Express app
 const app = express();
 app.use(cors());
-app.use(express.json()); 
+app.use(express.json());
 
-// JWT Secret 
+// JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Storage path for user uploads
+// Users storage
 const USERS_FILE = path.join(__dirname, 'users.json');
 async function loadUsers() {
   try {
@@ -33,7 +30,7 @@ async function saveUsers(users) {
   await fsPromises.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
-// Middleware to check JWT and get user
+// JWT Auth Middleware
 function authMiddleware(req, res, next) {
   const header = req.headers['authorization'];
   if (!header) return res.status(401).json({ success: false, message: 'No token' });
@@ -47,7 +44,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Registration route
+// Registration
 app.post('/register', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -71,7 +68,7 @@ app.post('/register', async (req, res) => {
   res.json({ success: true, message: 'Registration successful.' });
 });
 
-// Login route
+// Login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -88,9 +85,7 @@ app.post('/login', async (req, res) => {
   res.json({ success: true, token });
 });
 
-// --- Per-user uploads setup ---
-
-// Multer storage: uploads/<userId>/
+// Multer storage per user
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const userId = req.user.id;
@@ -104,14 +99,14 @@ const storage = multer.diskStorage({
     cb(null, file.originalname);
   }
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
-// Simple home route
+// Home
 app.get('/', (req, res) => {
   res.send('Backend is running.');
 });
 
-// Upload endpoint (auth required)
+// Upload file (auth)
 app.post('/upload', authMiddleware, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded!' });
@@ -119,19 +114,19 @@ app.post('/upload', authMiddleware, upload.single('file'), (req, res) => {
   res.json({ success: true, filename: req.file.originalname, message: 'File uploaded successfully.' });
 });
 
-// List files (auth required)
+// List files (auth)
 app.get('/files', authMiddleware, (req, res) => {
   const userId = req.user.id;
   const userUploadDir = path.join(__dirname, 'uploads', userId);
   fs.readdir(userUploadDir, (err, files) => {
     if (err) {
-      return res.json({ files: [] }); 
+      return res.json({ files: [] });
     }
     res.json({ files });
   });
 });
 
-// Download file (auth required)
+// Download file (auth)
 app.get('/files/:name', authMiddleware, (req, res) => {
   const userId = req.user.id;
   const filePath = path.join(__dirname, 'uploads', userId, req.params.name);
@@ -141,7 +136,22 @@ app.get('/files/:name', authMiddleware, (req, res) => {
   res.download(filePath);
 });
 
-// Start the server
+// Delete file (auth)
+app.delete('/files/:name', authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  const filePath = path.join(__dirname, 'uploads', userId, req.params.name);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ success: false, message: 'File not found.' });
+  }
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Failed to delete file.' });
+    }
+    res.json({ success: true, message: 'File deleted.' });
+  });
+});
+
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
