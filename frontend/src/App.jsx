@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import jwt_decode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
+
 
 const BACKEND = 'https://file-upload-demo-8ti2.onrender.com';
 
@@ -17,7 +18,8 @@ function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
   // Get user email from token
-  const userEmail = token ? jwt_decode(token).email : '';
+  const userEmail = token ? jwtDecode(token).email : '';
+
 
   async function handleAuthSubmit(e) {
     e.preventDefault();
