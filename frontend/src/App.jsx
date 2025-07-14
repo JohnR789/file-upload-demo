@@ -175,23 +175,42 @@ function App() {
 
   if (!token) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f3f4f8 0%, #c8e0f4 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: '#fff',
-          borderRadius: 16,
-          padding: '2.5rem 2.5rem 2rem 2.5rem',
-          boxShadow: '0 6px 36px rgba(44,62,80,0.12)',
-          width: 350,
-          maxWidth: '90vw'
-        }}>
-          <h2 style={{ color: '#223555', marginBottom: 20 }}>{authMode === 'login' ? 'Login' : 'Register'}</h2>
-          <form onSubmit={handleAuthSubmit}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #dbeafe 0%, #c7d2fe 50%, #f0abfc 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'Inter, sans-serif',
+          transition: 'background 0.5s'
+        }}
+      >
+        <div
+          style={{
+            backdropFilter: 'blur(16px)',
+            background: 'rgba(255,255,255,0.82) linear-gradient(135deg,#f1f5f9 10%,#dbeafe 80%)',
+            borderRadius: 32,
+            boxShadow: '0 12px 48px 0 rgba(110,120,250,0.10),0 1.5px 14px 0 rgba(186,150,255,0.04)',
+            padding: '2.8rem 2.5rem 2.5rem 2.5rem',
+            width: 380,
+            maxWidth: '98vw',
+            border: '1.5px solid #e0e7ff',
+            transition: 'box-shadow 0.2s'
+          }}
+        >
+          <h2
+            style={{
+              color: '#312e81',
+              marginBottom: 22,
+              letterSpacing: 0.5,
+              fontWeight: 800,
+              fontSize: 26
+            }}
+          >
+            {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+          </h2>
+          <form onSubmit={handleAuthSubmit} autoComplete="off">
             <input
               type="email"
               placeholder="Email"
@@ -199,8 +218,17 @@ function App() {
               onChange={e => setEmail(e.target.value)}
               required
               style={{
-                width: '100%', padding: '9px', marginBottom: 12, borderRadius: 6,
-                border: '1px solid #bcdcff', fontSize: 15
+                width: '100%',
+                padding: '15px 16px',
+                marginBottom: 14,
+                borderRadius: 18,
+                border: 'none',
+                outline: 'none',
+                fontSize: 16,
+                background: '#f3f4f6',
+                color: '#312e81',
+                boxShadow: '0 0.5px 2px 0 #e0e7ff,0 1.5px 8px 0 #e0e7ff',
+                transition: 'box-shadow 0.15s'
               }}
             />
             <input
@@ -210,44 +238,87 @@ function App() {
               onChange={e => setPassword(e.target.value)}
               required
               style={{
-                width: '100%', padding: '9px', marginBottom: 18, borderRadius: 6,
-                border: '1px solid #bcdcff', fontSize: 15
+                width: '100%',
+                padding: '15px 16px',
+                marginBottom: 22,
+                borderRadius: 18,
+                border: 'none',
+                outline: 'none',
+                fontSize: 16,
+                background: '#f3f4f6',
+                color: '#312e81',
+                boxShadow: '0 0.5px 2px 0 #e0e7ff,0 1.5px 8px 0 #e0e7ff',
+                transition: 'box-shadow 0.15s'
               }}
             />
             <button
               type="submit"
               style={{
                 width: '100%',
-                background: '#2563eb',
+                background: 'linear-gradient(90deg, #6366f1 10%, #818cf8 100%)',
                 color: '#fff',
-                padding: '10px 0',
+                padding: '13px 0',
                 border: 'none',
-                borderRadius: 8,
-                fontWeight: 600,
-                fontSize: 16,
+                borderRadius: 24,
+                fontWeight: 700,
+                fontSize: 17,
                 cursor: 'pointer',
-                marginBottom: 12
+                boxShadow: '0 2px 8px 0 #a5b4fc36',
+                marginBottom: 12,
+                letterSpacing: 0.1,
+                transition: 'background 0.18s'
               }}
             >
-              {authMode === 'login' ? 'Login' : 'Register'}
+              {authMode === 'login' ? 'Sign In' : 'Sign Up'}
             </button>
           </form>
-          <div style={{ color: authStatus.startsWith('Logged') ? '#16a34a' : '#ef4444', minHeight: 24, marginBottom: 12 }}>
+          <div
+            style={{
+              color: authStatus.startsWith('Logged')
+                ? '#22c55e'
+                : authStatus.startsWith('Registration')
+                ? '#0ea5e9'
+                : '#dc2626',
+              minHeight: 26,
+              marginBottom: 14,
+              fontSize: 15
+            }}
+          >
             {authStatus}
           </div>
-          <div style={{ fontSize: 14 }}>
+          <div style={{ fontSize: 15 }}>
             {authMode === 'login' ? (
               <>
-                No account?{' '}
-                <span style={{ color: '#2563eb', cursor: 'pointer' }} onClick={() => { setAuthMode('register'); setAuthStatus(''); }}>
-                  Register here
+                <span style={{ color: '#6d28d9' }}>New here?</span>{' '}
+                <span
+                  style={{
+                    color: '#2563eb',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                  onClick={() => {
+                    setAuthMode('register');
+                    setAuthStatus('');
+                  }}
+                >
+                  Create account
                 </span>
               </>
             ) : (
               <>
-                Already have an account?{' '}
-                <span style={{ color: '#2563eb', cursor: 'pointer' }} onClick={() => { setAuthMode('login'); setAuthStatus(''); }}>
-                  Login here
+                <span style={{ color: '#475569' }}>Already have an account?</span>{' '}
+                <span
+                  style={{
+                    color: '#2563eb',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthStatus('');
+                  }}
+                >
+                  Sign in
                 </span>
               </>
             )}
@@ -258,38 +329,77 @@ function App() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f3f4f8 0%, #c8e0f4 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
-      <div style={{
-        background: '#fff',
-        borderRadius: 16,
-        padding: '2.5rem 2.5rem 2rem 2.5rem',
-        boxShadow: '0 6px 36px rgba(44,62,80,0.12)',
-        width: 370,
-        maxWidth: '90vw'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #dbeafe 0%, #c7d2fe 50%, #f0abfc 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Inter, sans-serif',
+        transition: 'background 0.5s'
+      }}
+    >
+      <div
+        style={{
+          backdropFilter: 'blur(16px)',
+          background: 'rgba(255,255,255,0.88) linear-gradient(135deg,#e0e7ff 0%,#f5d0fe 100%)',
+          borderRadius: 32,
+          boxShadow: '0 12px 48px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.05)',
+          padding: '2.8rem 2.5rem 2.5rem 2.5rem',
+          width: 410,
+          maxWidth: '98vw',
+          border: '1.5px solid #e0e7ff',
+          transition: 'box-shadow 0.2s'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 15
+          }}
+        >
           <div>
-            <h2 style={{ color: '#223555', margin: 0, letterSpacing: 0.5 }}>File Upload Demo</h2>
-            <div style={{ fontSize: 14, color: '#555', marginTop: 2 }}>
+            <h2
+              style={{
+                color: '#312e81',
+                margin: 0,
+                letterSpacing: 0.5,
+                fontWeight: 800,
+                fontSize: 26
+              }}
+            >
+              File Upload Demo
+            </h2>
+            <div
+              style={{
+                fontSize: 15.2,
+                color: '#52525b',
+                marginTop: 2,
+                fontWeight: 500
+              }}
+            >
               {userEmail}
             </div>
           </div>
-          <button onClick={handleLogout} style={{
-            background: '#e5e7eb',
-            color: '#223555',
-            border: 'none',
-            borderRadius: 6,
-            padding: '6px 16px',
-            cursor: 'pointer',
-            fontSize: 13,
-            fontWeight: 500
-          }}>Logout</button>
+          <button
+            onClick={handleLogout}
+            style={{
+              background: 'linear-gradient(90deg,#c7d2fe 60%,#a5b4fc 100%)',
+              color: '#312e81',
+              border: 'none',
+              borderRadius: 18,
+              padding: '8px 22px',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+              transition: 'background 0.18s'
+            }}
+          >
+            Logout
+          </button>
         </div>
         <form
           onSubmit={handleFileUpload}
@@ -297,24 +407,37 @@ function App() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={{
-            border: dragActive ? '2px dashed #2563eb' : '2px solid #e5e7eb',
-            background: dragActive ? '#eaf6ff' : '',
-            borderRadius: 8,
-            padding: 18,
-            marginBottom: 12
+            border: dragActive
+              ? '2.5px dashed #6366f1'
+              : '1.5px solid #e5e7eb',
+            background: dragActive
+              ? 'rgba(196,181,253,0.08)'
+              : '#f9fafb',
+            borderRadius: 24,
+            padding: 22,
+            marginBottom: 16,
+            boxShadow: dragActive
+              ? '0 0 0 4px #a5b4fc33'
+              : '0 0.5px 8px 0 #f3e8ff10'
           }}
         >
-          <label htmlFor="file-upload" style={{
-            display: 'inline-block',
-            background: '#eaf6ff',
-            color: '#2563eb',
-            fontWeight: 500,
-            padding: '10px 22px',
-            borderRadius: 8,
-            cursor: 'pointer',
-            marginBottom: 12,
-            border: '1px solid #bcdcff'
-          }}>
+          <label
+            htmlFor="file-upload"
+            style={{
+              display: 'inline-block',
+              background: '#f3f4f6',
+              color: '#6366f1',
+              fontWeight: 600,
+              padding: '13px 28px',
+              borderRadius: 18,
+              cursor: 'pointer',
+              marginBottom: 14,
+              border: '1.5px solid #a5b4fc',
+              boxShadow: '0 0.5px 2px 0 #e0e7ff',
+              fontSize: 15.5,
+              transition: 'background 0.16s, color 0.16s'
+            }}
+          >
             Choose File
             <input
               id="file-upload"
@@ -323,41 +446,120 @@ function App() {
               onChange={handleFileChange}
             />
           </label>
-          <div style={{ marginBottom: 16, fontSize: 13, color: '#444', minHeight: 20 }}>
-            {file ? file.name : (dragActive ? "Drop file here..." : "or drag & drop here")}
+          <div
+            style={{
+              marginBottom: 18,
+              fontSize: 14.5,
+              color: dragActive ? '#312e81' : '#6d28d9',
+              minHeight: 24,
+              fontWeight: 500,
+              letterSpacing: 0.01,
+              transition: 'color 0.12s'
+            }}
+          >
+            {file
+              ? file.name
+              : dragActive
+              ? 'Drop file here to upload'
+              : 'or drag & drop here'}
           </div>
           <button
             type="submit"
             disabled={uploading}
             style={{
               width: '100%',
-              background: uploading ? '#bcdcff' : '#2563eb',
-              color: '#fff',
-              padding: '10px 0',
+              background: uploading
+                ? 'linear-gradient(90deg, #d1fae5 10%, #a7f3d0 100%)'
+                : 'linear-gradient(90deg, #a5b4fc 10%, #6366f1 100%)',
+              color: uploading ? '#52525b' : '#fff',
+              padding: '15px 0',
               border: 'none',
-              borderRadius: 8,
-              fontWeight: 600,
-              fontSize: 16,
+              borderRadius: 24,
+              fontWeight: 800,
+              fontSize: 17.2,
               cursor: uploading ? 'not-allowed' : 'pointer',
-              transition: 'background 0.2s'
+              boxShadow: uploading
+                ? '0 1px 2px #d1fae5'
+                : '0 2px 8px 0 #a5b4fc33',
+              letterSpacing: 0.1,
+              marginBottom: 5,
+              transition: 'background 0.18s'
             }}
           >
             {uploading ? 'Uploading...' : 'Upload'}
           </button>
         </form>
-        <div style={{ margin: '20px 0', minHeight: 28, color: status.startsWith('File uploaded successfully.') ? '#16a34a' : status.startsWith('Error') || status.startsWith('Upload') ? '#ef4444' : '#444' }}>{status}</div>
-        <hr style={{ margin: '1.8rem 0' }} />
-        <h3 style={{ color: '#223555', fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Your Files</h3>
-        {uploadedFiles.length === 0 && <div style={{ color: '#bbb' }}>No files yet.</div>}
-        <ul style={{ listStyle: 'none', padding: 0, maxHeight: 130, overflowY: 'auto' }}>
+        <div
+          style={{
+            margin: '17px 0',
+            minHeight: 28,
+            color: status.startsWith('File uploaded')
+              ? '#22c55e'
+              : status.startsWith('Error') || status.startsWith('Upload')
+              ? '#dc2626'
+              : '#444',
+            fontWeight: 600,
+            fontSize: 16
+          }}
+        >
+          {status}
+        </div>
+        <hr style={{ margin: '2.2rem 0 1.2rem', borderColor: '#e0e7ff' }} />
+        <h3
+          style={{
+            color: '#312e81',
+            fontSize: 19,
+            fontWeight: 800,
+            marginBottom: 12,
+            letterSpacing: 0.2
+          }}
+        >
+          Your Files
+        </h3>
+        {uploadedFiles.length === 0 && (
+          <div
+            style={{
+              color: '#bbb',
+              fontWeight: 500,
+              fontSize: 15,
+              marginBottom: 10
+            }}
+          >
+            No files yet.
+          </div>
+        )}
+        <ul
+          style={{
+            listStyle: 'none',
+            padding: 0,
+            maxHeight: 140,
+            overflowY: 'auto',
+            marginBottom: 8
+          }}
+        >
           {uploadedFiles.map(name => (
-            <li key={name} style={{ margin: '7px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <li
+              key={name}
+              style={{
+                margin: '11px 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderRadius: 12,
+                background: '#f8fafc',
+                boxShadow: '0 0.5px 3px #f3e8ff16',
+                padding: '9px 13px'
+              }}
+            >
               <span
                 style={{
-                  color: '#2563eb',
-                  fontWeight: 500,
+                  color: '#6366f1',
+                  fontWeight: 600,
                   textDecoration: 'underline',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontSize: 15.3,
+                  letterSpacing: 0.01,
+                  transition: 'color 0.13s'
                 }}
                 onClick={() => handleDownload(name)}
                 title="Download"
@@ -367,14 +569,16 @@ function App() {
               <button
                 onClick={() => handleDelete(name)}
                 style={{
-                  marginLeft: 12,
-                  background: '#fee2e2',
+                  marginLeft: 16,
+                  background: 'linear-gradient(90deg, #fee2e2 70%, #fca5a5 100%)',
                   color: '#dc2626',
                   border: 'none',
-                  borderRadius: 6,
-                  padding: '4px 10px',
-                  fontSize: 13,
-                  cursor: 'pointer'
+                  borderRadius: 14,
+                  padding: '6px 17px',
+                  fontSize: 14.2,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s, color 0.15s'
                 }}
               >
                 Delete
@@ -388,6 +592,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
