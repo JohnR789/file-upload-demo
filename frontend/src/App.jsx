@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
-
 const BACKEND = 'https://file-upload-demo-8ti2.onrender.com';
 
 function App() {
@@ -19,7 +18,6 @@ function App() {
 
   // Get user email from token
   const userEmail = token ? jwtDecode(token).email : '';
-
 
   async function handleAuthSubmit(e) {
     e.preventDefault();
@@ -111,6 +109,28 @@ function App() {
       setStatus('Error uploading file.');
     } finally {
       setUploading(false);
+    }
+  }
+
+  // Download file using fetch so JWT can be included
+  async function handleDownload(name) {
+    try {
+      const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setStatus('Error downloading file.');
+        return;
+      }
+      const blob = await res.blob();
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = name;
+      link.click();
+      window.URL.revokeObjectURL(link.href);
+    } catch {
+      setStatus('Error downloading file.');
     }
   }
 
@@ -332,18 +352,18 @@ function App() {
         <ul style={{ listStyle: 'none', padding: 0, maxHeight: 130, overflowY: 'auto' }}>
           {uploadedFiles.map(name => (
             <li key={name} style={{ margin: '7px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <a
-                href={`${BACKEND}/files/${encodeURIComponent(name)}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <span
                 style={{
                   color: '#2563eb',
                   fontWeight: 500,
-                  textDecoration: 'underline'
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
                 }}
+                onClick={() => handleDownload(name)}
+                title="Download"
               >
                 {name}
-              </a>
+              </span>
               <button
                 onClick={() => handleDelete(name)}
                 style={{
@@ -368,6 +388,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
