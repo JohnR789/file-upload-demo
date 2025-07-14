@@ -1,4 +1,4 @@
-// Import required modules
+// Backend server for file upload, download, and preview with user authentication
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'changeme!';
 
 // Users storage
 const USERS_FILE = path.join(__dirname, 'users.json');
@@ -136,6 +136,67 @@ app.get('/files/:name', authMiddleware, (req, res) => {
   res.download(filePath);
 });
 
+// File preview endpoint (supports images, pdfs, audio, video, text)
+app.get('/files/:name/preview', authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  const filePath = path.join(__dirname, 'uploads', userId, req.params.name);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('File not found.');
+  }
+  const ext = path.extname(filePath).slice(1).toLowerCase();
+
+  // Images
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) {
+    res.setHeader('Content-Type', `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  // PDF
+  if (ext === 'pdf') {
+    res.setHeader('Content-Type', 'application/pdf');
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  // Audio
+  if (['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(ext)) {
+    res.setHeader('Content-Type', `audio/${ext}`);
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  // Video
+  if (['mp4', 'webm', 'mov', 'mkv'].includes(ext)) {
+    res.setHeader('Content-Type', `video/${ext}`);
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  // Text preview (first 20 lines)
+  if (['txt', 'md', 'csv', 'json', 'log'].includes(ext)) {
+    res.setHeader('Content-Type', 'text/plain');
+    const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+    let data = '';
+    let lineCount = 0;
+    stream.on('data', chunk => {
+      data += chunk;
+      const lines = data.split('\n');
+      if (lines.length > 20) {
+        stream.destroy();
+        res.end(lines.slice(0, 20).join('\n') + '\n... (truncated)');
+      }
+    });
+    stream.on('close', () => {
+      const lines = data.split('\n');
+      if (lines.length <= 20) {
+        res.end(lines.join('\n'));
+      }
+    });
+    stream.on('error', () => res.status(500).send('Error reading file.'));
+    return;
+  }
+
+  // Other: force download
+  res.download(filePath);
+});
+
 // Delete file (auth)
 app.delete('/files/:name', authMiddleware, (req, res) => {
   const userId = req.user.id;
@@ -156,4 +217,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
 

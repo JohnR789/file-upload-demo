@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
@@ -25,6 +26,8 @@ function getFileType(name) {
   if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
   if (['pdf'].includes(ext)) return 'pdf';
   if (['txt', 'md', 'csv', 'json', 'log'].includes(ext)) return 'text';
+  if (['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(ext)) return 'audio';
+  if (['mp4', 'webm', 'mov', 'mkv'].includes(ext)) return 'video';
   return 'other';
 }
 
@@ -46,6 +49,7 @@ function App() {
   const [showCard, setShowCard] = useState(false);
   const [listAnim, setListAnim] = useState(false);
   const [previews, setPreviews] = useState({});
+  const [previewModal, setPreviewModal] = useState(null); 
 
   const userEmail = token ? jwtDecode(token).email : '';
 
@@ -213,7 +217,7 @@ function App() {
       if (getFileType(name) !== 'image') continue;
       try {
         // Load preview blob as a DataURL for security 
-        const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}`, {
+        const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}/preview`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
@@ -243,6 +247,37 @@ function App() {
   useEffect(() => {
     if (token) fetchFiles();
   }, [token, fetchFiles]);
+
+  // Show preview modal for file
+  async function handleShowPreview(name) {
+    const type = getFileType(name);
+    setPreviewModal({ name, type, content: null, loading: true, error: null });
+
+    try {
+      // Images, audio, video, pdfs all fetched as blobs
+      if (['image', 'audio', 'video', 'pdf'].includes(type)) {
+        const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}/preview`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Preview failed.');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        setPreviewModal({ name, type, content: url, loading: false, error: null });
+      } else if (type === 'text') {
+        // For text, fetch as text
+        const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}/preview`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Preview failed.');
+        const text = await res.text();
+        setPreviewModal({ name, type, content: text, loading: false, error: null });
+      } else {
+        setPreviewModal({ name, type, content: null, loading: false, error: 'No preview for this file type.' });
+      }
+    } catch (e) {
+      setPreviewModal({ name, type, content: null, loading: false, error: e.message });
+    }
+  }
 
   // UI background
   const animatedBg = {
@@ -437,6 +472,63 @@ function App() {
   // File Upload & Listing UI
   return (
     <div style={animatedBg}>
+      {/* Preview Modal */}
+      {previewModal && (
+        <div style={{
+          position: 'fixed', zIndex: 10000, left: 0, top: 0, width: '100vw', height: '100vh',
+          background: 'rgba(30,21,50,0.33)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}
+          onClick={() => setPreviewModal(null)}
+        >
+          <div style={{
+            minWidth: 340, maxWidth: 600, width: '90vw',
+            background: '#fff', borderRadius: 26, boxShadow: '0 8px 34px #6c47a93b',
+            padding: '1.3rem 1.3rem 1rem 1.3rem', position: 'relative', textAlign: 'left'
+          }}
+            onClick={e => e.stopPropagation()}
+          >
+            <span style={{ position: 'absolute', right: 25, top: 16, fontWeight: 700, color: '#7c3aed', cursor: 'pointer', fontSize: 22 }}
+              onClick={() => setPreviewModal(null)}
+              title="Close">&times;</span>
+            <div style={{ fontWeight: 700, color: '#312e81', fontSize: 18, marginBottom: 12, overflow: 'auto', wordBreak: 'break-word' }}>
+              {previewModal.name}
+            </div>
+            {previewModal.loading && <Loader />}
+            {previewModal.error && <div style={{ color: '#dc2626', fontWeight: 600 }}>{previewModal.error}</div>}
+            {!previewModal.loading && !previewModal.error && (
+              <>
+                {previewModal.type === 'image' && previewModal.content && (
+                  <img src={previewModal.content} alt="Preview" style={{ maxWidth: '100%', maxHeight: 350, borderRadius: 12 }} />
+                )}
+                {previewModal.type === 'pdf' && previewModal.content && (
+                  <iframe src={previewModal.content} title="PDF Preview" style={{ width: '100%', height: 390, border: 'none', borderRadius: 10 }}></iframe>
+                )}
+                {previewModal.type === 'audio' && previewModal.content && (
+                  <audio controls style={{ width: '100%' }}>
+                    <source src={previewModal.content} />
+                    Your browser does not support the audio tag.
+                  </audio>
+                )}
+                {previewModal.type === 'video' && previewModal.content && (
+                  <video controls style={{ width: '100%', maxHeight: 340, borderRadius: 8 }}>
+                    <source src={previewModal.content} />
+                    Your browser does not support the video tag.
+                  </video>
+                )}
+                {previewModal.type === 'text' && previewModal.content && (
+                  <pre style={{
+                    background: '#f3f4f6', borderRadius: 8, padding: '1rem',
+                    maxHeight: 290, overflow: 'auto', fontSize: 15, lineHeight: 1.4
+                  }}>{previewModal.content}</pre>
+                )}
+                {previewModal.type === 'other' && (
+                  <div style={{ color: '#888', fontStyle: 'italic' }}>No preview available for this file type.</div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
       <div style={{
         width: '100vw',
         height: '100vh',
@@ -638,21 +730,38 @@ function App() {
                     paddingRight: 6,
                     transition: 'color 0.13s'
                   }}
-                  onClick={() => handleDownload(name)}
-                  title="Download"
+                  onClick={() => handleShowPreview(name)}
+                  title="Preview"
                 >
                   {name}
                 </span>
                 <button
+                  onClick={() => handleDownload(name)}
+                  style={{
+                    marginLeft: 8,
+                    background: 'linear-gradient(90deg, #bae6fd 50%, #93c5fd 100%)',
+                    color: '#2563eb',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '6px 12px',
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'background 0.15s, color 0.15s'
+                  }}
+                >
+                  Download
+                </button>
+                <button
                   onClick={() => handleDelete(name)}
                   style={{
-                    marginLeft: 16,
+                    marginLeft: 8,
                     background: 'linear-gradient(90deg, #fee2e2 70%, #fca5a5 100%)',
                     color: '#dc2626',
                     border: 'none',
                     borderRadius: 14,
-                    padding: '6px 17px',
-                    fontSize: 14.2,
+                    padding: '6px 13px',
+                    fontSize: 13.5,
                     fontWeight: 700,
                     cursor: 'pointer',
                     transition: 'background 0.15s, color 0.15s'
@@ -694,6 +803,9 @@ function App() {
 }
 
 export default App;
+
+
+
 
 
 
