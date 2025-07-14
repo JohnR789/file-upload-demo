@@ -3,6 +3,7 @@ import { jwtDecode } from 'jwt-decode';
 
 const BACKEND = 'https://file-upload-demo-8ti2.onrender.com';
 
+// Loader Spinner
 function Loader() {
   return (
     <div style={{
@@ -19,19 +20,23 @@ function Loader() {
   );
 }
 
-function App() {
-  // Animated background gradient state
-  const [gradientPos, setGradientPos] = useState(0);
+function getFileType(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
+  if (['pdf'].includes(ext)) return 'pdf';
+  if (['txt', 'md', 'csv', 'json', 'log'].includes(ext)) return 'text';
+  return 'other';
+}
 
-  // Auth state
+function App() {
+  // UI State
+  const [gradientPos, setGradientPos] = useState(0);
   const [authMode, setAuthMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [authStatus, setAuthStatus] = useState('');
-
-  // File state
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -40,11 +45,11 @@ function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [showCard, setShowCard] = useState(false);
   const [listAnim, setListAnim] = useState(false);
+  const [previews, setPreviews] = useState({});
 
-  // Get user email from token
   const userEmail = token ? jwtDecode(token).email : '';
 
-  // Animate background gradient
+  // Animate gradient
   useEffect(() => {
     const animate = () => {
       setGradientPos(pos => (pos + 0.08) % 100);
@@ -54,18 +59,15 @@ function App() {
     return () => {};
   }, []);
 
-  // Card fade-in
   useEffect(() => {
     setTimeout(() => setShowCard(true), 80);
   }, [token]);
 
-  // Animate file list on update
   useEffect(() => {
     setListAnim(false);
     setTimeout(() => setListAnim(true), 140);
   }, [uploadedFiles]);
 
-  // Animate status message
   useEffect(() => {
     if (!status) return;
     setStatusAnim('fadeIn');
@@ -110,6 +112,7 @@ function App() {
     setUploadedFiles([]);
     setFile(null);
     setStatus('');
+    setPreviews({});
   }
 
   function handleFileChange(e) {
@@ -117,15 +120,9 @@ function App() {
     setStatus('');
   }
 
-  // Drag and drop logic
-  function handleDragOver(e) {
-    e.preventDefault();
-    setDragActive(true);
-  }
-  function handleDragLeave(e) {
-    e.preventDefault();
-    setDragActive(false);
-  }
+  // Drag/Drop logic
+  function handleDragOver(e) { e.preventDefault(); setDragActive(true);}
+  function handleDragLeave(e) { e.preventDefault(); setDragActive(false);}
   function handleDrop(e) {
     e.preventDefault();
     setDragActive(false);
@@ -167,7 +164,7 @@ function App() {
     }
   }
 
-  // Download file using fetch so JWT can be included
+  // Download file using fetch (auth)
   async function handleDownload(name) {
     try {
       const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}`, {
@@ -209,6 +206,25 @@ function App() {
     }
   }
 
+  // Get file previews for images (auth)
+  const fetchPreviews = useCallback(async (files) => {
+    const out = {};
+    for (let name of files) {
+      if (getFileType(name) !== 'image') continue;
+      try {
+        // Load preview blob as a DataURL for security 
+        const res = await fetch(`${BACKEND}/files/${encodeURIComponent(name)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          out[name] = URL.createObjectURL(blob);
+        }
+      } catch { /* skip error */ }
+    }
+    setPreviews(out);
+  }, [token]);
+
   // Fetch file list
   const fetchFiles = useCallback(async () => {
     try {
@@ -217,17 +233,18 @@ function App() {
       });
       const data = await res.json();
       setUploadedFiles(data.files || []);
+      // fetch previews for images
+      fetchPreviews(data.files || []);
     } catch {
       setUploadedFiles([]);
     }
-  }, [token]);
+  }, [token, fetchPreviews]);
 
   useEffect(() => {
-    if (token) {
-      fetchFiles();
-    }
+    if (token) fetchFiles();
   }, [token, fetchFiles]);
 
+  // UI background
   const animatedBg = {
     minHeight: '100vh',
     minWidth: '100vw',
@@ -244,33 +261,30 @@ function App() {
     transition: 'background 1s linear'
   };
 
+  // Auth card
   if (!token) {
     return (
       <div style={animatedBg}>
-        <div
-          style={{
-            width: '100vw',
-            height: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 430,
-              margin: '0 auto',
-              padding: '3.2rem 2.2rem 2.7rem 2.2rem',
-              background: 'rgba(255,255,255,0.85) linear-gradient(135deg,#f1f5f9 10%,#dbeafe 80%)',
-              borderRadius: 36,
-              boxShadow: `0 12px 44px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.04)`,
-              border: '1.5px solid #e0e7ff',
-              opacity: showCard ? 1 : 0,
-              transform: showCard ? 'scale(1)' : 'scale(0.97)',
-              transition: 'all 0.65s cubic-bezier(.4,.6,0,1)'
-            }}
-          >
+        <div style={{
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: 430,
+            margin: '0 auto',
+            padding: '3.2rem 2.2rem 2.7rem 2.2rem',
+            background: 'rgba(255,255,255,0.85) linear-gradient(135deg,#f1f5f9 10%,#dbeafe 80%)',
+            borderRadius: 36,
+            boxShadow: `0 12px 44px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.04)`,
+            border: '1.5px solid #e0e7ff',
+            opacity: showCard ? 1 : 0,
+            transform: showCard ? 'scale(1)' : 'scale(0.97)',
+            transition: 'all 0.65s cubic-bezier(.4,.6,0,1)'
+          }}>
             <h2 style={{
               color: '#312e81',
               marginBottom: 22,
@@ -301,7 +315,10 @@ function App() {
                   transition: 'box-shadow 0.15s'
                 }}
               />
-              <div style={{ position: 'relative', marginBottom: 22 }}>
+              <div style={{
+                position: 'relative',
+                marginBottom: 22
+              }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
@@ -310,7 +327,7 @@ function App() {
                   required
                   style={{
                     width: '100%',
-                    padding: '15px 45px 15px 16px',
+                    padding: '15px 46px 15px 16px',
                     borderRadius: 18,
                     border: 'none',
                     outline: 'none',
@@ -323,33 +340,29 @@ function App() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword(p => !p)}
                   style={{
                     position: 'absolute',
-                    right: 12,
+                    right: 13,
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
+                    padding: 0,
                     cursor: 'pointer',
-                    fontSize: 19,
-                    color: '#6366f1',
-                    opacity: 0.78,
-                    padding: 0
+                    outline: 'none'
                   }}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={0}
                 >
-                  {showPassword
-                    ? (
-                        // Eye-off icon (SVG)
-                        <svg width="23" height="23" fill="none" viewBox="0 0 24 24"><path d="M3 3l18 18m-9-2c-5.333 0-8-5.25-8-5.25s1.39-2.5 4.07-4.35m5.88-.7A3 3 0 0012 9c-1.657 0-3 1.343-3 3 0 .524.135 1.018.37 1.44m2.03 2.06A3 3 0 0015 12m3.53-2.44C20.61 10.75 22 13 22 13s-2.667 5.25-8 5.25c-1.137 0-2.158-.2-3.065-.53" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      )
-                    : (
-                        // Eye icon (SVG)
-                        <svg width="23" height="23" fill="none" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      )
-                  }
+                  <svg width="26" height="26" fill="none" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="12" rx="10" ry="7.5" stroke="#7c3aed" strokeWidth="2.2" />
+                    {showPassword ? (
+                      <circle cx="12" cy="12" r="3.2" fill="#7c3aed" />
+                    ) : (
+                      <ellipse cx="12" cy="12" rx="2.6" ry="2.6" fill="#7c3aed" />
+                    )}
+                  </svg>
                 </button>
               </div>
               <button
@@ -420,32 +433,30 @@ function App() {
       </div>
     );
   }
+
+  // File Upload & Listing UI
   return (
     <div style={animatedBg}>
-      <div
-        style={{
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 500,
-            margin: '0 auto',
-            padding: '3rem 2rem 2.5rem 2rem',
-            background: 'rgba(255,255,255,0.90) linear-gradient(135deg,#e0e7ff 0%,#f5d0fe 100%)',
-            borderRadius: 36,
-            boxShadow: '0 12px 48px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.05)',
-            border: '1.5px solid #e0e7ff',
-            opacity: showCard ? 1 : 0,
-            transform: showCard ? 'scale(1)' : 'scale(0.97)',
-            transition: 'all 0.7s cubic-bezier(.5,.6,0,1)'
-          }}
-        >
+      <div style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: 500,
+          margin: '0 auto',
+          padding: '3rem 2rem 2.5rem 2rem',
+          background: 'rgba(255,255,255,0.90) linear-gradient(135deg,#e0e7ff 0%,#f5d0fe 100%)',
+          borderRadius: 36,
+          boxShadow: '0 12px 48px 0 rgba(110,120,250,0.14),0 1.5px 14px 0 rgba(186,150,255,0.05)',
+          border: '1.5px solid #e0e7ff',
+          opacity: showCard ? 1 : 0,
+          transform: showCard ? 'scale(1)' : 'scale(0.97)',
+          transition: 'all 0.7s cubic-bezier(.5,.6,0,1)'
+        }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18
           }}>
@@ -557,8 +568,8 @@ function App() {
               color: status.startsWith('File uploaded successfully.')
                 ? '#22c55e'
                 : status.startsWith('Error') || status.startsWith('Upload') || status.startsWith('Delete failed')
-                ? '#dc2626'
-                : '#444',
+                  ? '#dc2626'
+                  : '#444',
               fontWeight: 600,
               fontSize: 15.5,
               letterSpacing: 0.03,
@@ -602,12 +613,21 @@ function App() {
                   margin: '11px 0',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
                   opacity: listAnim ? 1 : 0,
                   transform: listAnim ? 'translateY(0)' : 'translateY(25px)',
-                  transition: `all 0.45s cubic-bezier(.44,1.26,.52,1.01) ${0.11*idx}s`
+                  transition: `all 0.45s cubic-bezier(.44,1.26,.52,1.01) ${0.11 * idx}s`
                 }}
               >
+                {getFileType(name) === 'image' && previews[name] && (
+                  <img
+                    src={previews[name]}
+                    alt={name}
+                    style={{
+                      width: 34, height: 34, objectFit: 'cover', borderRadius: 6, marginRight: 10,
+                      border: '1.4px solid #a5b4fc', background: '#f3f4f6'
+                    }}
+                  />
+                )}
                 <span
                   style={{
                     color: '#6366f1',
@@ -645,7 +665,7 @@ function App() {
           </ul>
         </div>
       </div>
-      {/* Tiny inlined animation CSS */}
+      {/* Animation CSS */}
       <style>
         {`
           .fadeIn {
@@ -674,6 +694,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
