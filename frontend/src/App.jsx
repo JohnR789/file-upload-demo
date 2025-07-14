@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
-// File upload
 function App() {
-  // Store the selected file, upload state, and feedback/status messages
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
-  // Handle when a user picks a file
   function handleFileChange(e) {
     setFile(e.target.files[0]);
     setStatus('');
   }
 
-  // Upload the selected file to the backend
   async function handleSubmit(e) {
     e.preventDefault();
     if (!file) {
@@ -23,7 +19,6 @@ function App() {
     }
     setUploading(true);
     setStatus('Uploading...');
-
     const formData = new FormData();
     formData.append('file', file);
 
@@ -34,21 +29,20 @@ function App() {
       });
       const result = await response.json();
       if (result.success) {
-        setStatus('File uploaded!');
+        setStatus('✅ File uploaded!');
         setFile(null);
-        fetchFiles(); 
+        fetchFiles();
       } else {
         setStatus(result.message || 'Upload failed.');
       }
     } catch (error) {
-      console.error(error); 
+      console.error(error);
       setStatus('Error uploading file.');
     } finally {
       setUploading(false);
     }
   }
 
-  // Get the current list of uploaded files
   async function fetchFiles() {
     try {
       const res = await fetch('https://file-upload-demo-8ti2.onrender.com/files');
@@ -60,58 +54,98 @@ function App() {
     }
   }
 
-  // Load files when the page first appears
   useEffect(() => {
     fetchFiles();
   }, []);
 
   return (
     <div style={{
-      maxWidth: 400,
-      margin: '3rem auto',
-      textAlign: 'center',
-      padding: 24,
-      border: '1px solid #eee',
-      borderRadius: 12
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f3f4f8 0%, #c8e0f4 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     }}>
-      <h2>File Upload Demo</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="file" onChange={handleFileChange} />
-        <br /><br />
-        <button
-          type="submit"
-          disabled={uploading}
-          style={{
-            padding: '8px 24px',
-            borderRadius: 6,
-            cursor: uploading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {uploading ? 'Uploading...' : 'Upload'}
-        </button>
-      </form>
-      <div style={{ marginTop: 16, minHeight: 24 }}>{status}</div>
-      <hr style={{ margin: '2rem 0' }} />
-      <h3>Uploaded Files</h3>
-      {uploadedFiles.length === 0 && <div>No files yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {uploadedFiles.map(name => (
-          <li key={name} style={{ margin: '8px 0' }}>
-            <a
-              href={`https://file-upload-demo-8ti2.onrender.com/files/${encodeURIComponent(name)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {name}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <div style={{
+        background: '#fff',
+        borderRadius: 16,
+        padding: '2.5rem 2.5rem 2rem 2.5rem',
+        boxShadow: '0 6px 36px rgba(44,62,80,0.12)',
+        width: 350,
+        maxWidth: '90vw'
+      }}>
+        <h2 style={{ color: '#223555', marginBottom: 20, letterSpacing: 0.5 }}>File Upload Demo</h2>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="file-upload" style={{
+            display: 'inline-block',
+            background: '#eaf6ff',
+            color: '#2563eb',
+            fontWeight: 500,
+            padding: '10px 22px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            marginBottom: 12,
+            border: '1px solid #bcdcff'
+          }}>
+            Choose File
+            <input
+              id="file-upload"
+              type="file"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+          </label>
+          <div style={{ marginBottom: 16, fontSize: 13, color: '#444', minHeight: 20 }}>
+            {file && file.name}
+          </div>
+          <button
+            type="submit"
+            disabled={uploading}
+            style={{
+              width: '100%',
+              background: uploading ? '#bcdcff' : '#2563eb',
+              color: '#fff',
+              padding: '10px 0',
+              border: 'none',
+              borderRadius: 8,
+              fontWeight: 600,
+              fontSize: 16,
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              transition: 'background 0.2s'
+            }}
+          >
+            {uploading ? 'Uploading...' : 'Upload'}
+          </button>
+        </form>
+        <div style={{ margin: '20px 0', minHeight: 28, color: status.startsWith('✅') ? '#16a34a' : status.startsWith('❌') ? '#ef4444' : '#444' }}>{status}</div>
+        <hr style={{ margin: '1.8rem 0' }} />
+        <h3 style={{ color: '#223555', fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Uploaded Files</h3>
+        {uploadedFiles.length === 0 && <div style={{ color: '#bbb' }}>No files yet.</div>}
+        <ul style={{ listStyle: 'none', padding: 0, maxHeight: 130, overflowY: 'auto' }}>
+          {uploadedFiles.map(name => (
+            <li key={name} style={{ margin: '7px 0' }}>
+              <a
+                href={`https://file-upload-demo-8ti2.onrender.com/files/${encodeURIComponent(name)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: '#2563eb',
+                  fontWeight: 500,
+                  textDecoration: 'underline'
+                }}
+              >
+                {name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
 
 export default App;
+
 
 
 
