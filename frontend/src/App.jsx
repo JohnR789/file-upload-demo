@@ -330,26 +330,29 @@ function App() {
               {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
             <form onSubmit={handleAuthSubmit} autoComplete="off">
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '15px 16px',
-                  marginBottom: 14,
-                  borderRadius: 18,
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: 16,
-                  background: '#f3f4f6',
-                  color: '#312e81',
-                  boxShadow: '0 0.5px 2px 0 #e0e7ff,0 1.5px 8px 0 #e0e7ff',
-                  transition: 'box-shadow 0.15s'
-                }}
-              />
+              {/* Make email input match password field in width */}
+              <div style={{ position: 'relative', marginBottom: 14, width: '100%' }}>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '15px 44px 15px 16px', // right padding to visually match password field
+                    borderRadius: 18,
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: 16,
+                    background: '#f3f4f6',
+                    color: '#312e81',
+                    boxShadow: '0 0.5px 2px 0 #e0e7ff,0 1.5px 8px 0 #e0e7ff',
+                    transition: 'box-shadow 0.15s'
+                  }}
+                />
+              </div>
               <div style={{
                 position: 'relative',
                 marginBottom: 22,
