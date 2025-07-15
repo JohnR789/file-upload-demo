@@ -49,7 +49,7 @@ function App() {
   const [showCard, setShowCard] = useState(false);
   const [listAnim, setListAnim] = useState(false);
   const [previews, setPreviews] = useState({});
-  const [previewModal, setPreviewModal] = useState(null); 
+  const [previewModal, setPreviewModal] = useState(null);
 
   const userEmail = token ? jwtDecode(token).email : '';
 
@@ -352,7 +352,8 @@ function App() {
               />
               <div style={{
                 position: 'relative',
-                marginBottom: 22
+                marginBottom: 22,
+                width: '100%' // Ensures same width as email field
               }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -362,7 +363,8 @@ function App() {
                   required
                   style={{
                     width: '100%',
-                    padding: '15px 46px 15px 16px',
+                    boxSizing: 'border-box',
+                    padding: '15px 44px 15px 16px', // right padding for the button
                     borderRadius: 18,
                     border: 'none',
                     outline: 'none',
@@ -379,23 +381,29 @@ function App() {
                   onClick={() => setShowPassword(p => !p)}
                   style={{
                     position: 'absolute',
-                    right: 13,
+                    right: 11,
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
                     padding: 0,
+                    margin: 0,
                     cursor: 'pointer',
-                    outline: 'none'
+                    outline: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 28,
+                    width: 28,
                   }}
                   tabIndex={0}
                 >
-                  <svg width="26" height="26" fill="none" viewBox="0 0 24 24">
-                    <ellipse cx="12" cy="12" rx="10" ry="7.5" stroke="#7c3aed" strokeWidth="2.2" />
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="12" rx="10" ry="7.5" stroke="#7c3aed" strokeWidth="2" />
                     {showPassword ? (
-                      <circle cx="12" cy="12" r="3.2" fill="#7c3aed" />
+                      <circle cx="12" cy="12" r="3" fill="#7c3aed" />
                     ) : (
-                      <ellipse cx="12" cy="12" rx="2.6" ry="2.6" fill="#7c3aed" />
+                      <ellipse cx="12" cy="12" rx="2.2" ry="2.2" fill="#7c3aed" />
                     )}
                   </svg>
                 </button>
@@ -803,6 +811,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
